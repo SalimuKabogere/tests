@@ -1,0 +1,15 @@
+{
+    "name": "file-upload",
+    "private": true,
+    "type": "module",
+    "engines": {
+        "node": ">=20"
+    },
+    "scripts": {
+        "test": "node test.js",
+        "demo": "node demo.js",
+        "check": "node UploadPolicyCheck.js"
+    }
+
+
+}
