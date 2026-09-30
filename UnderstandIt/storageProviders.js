@@ -10,8 +10,7 @@ The only file that knows about Google Drive. Node only.
 import { createServer } from "node:http";
 import { createSign, randomUUID } from "node:crypto";
 
-// ---------- Contract ----------
-
+//contract for storage providers
 export class StorageProvider {
   name = "base";
 
@@ -21,40 +20,43 @@ export class StorageProvider {
   }
 }
 
-// ---------- Mock storage ----------
-
+// mock storage provider for testing and development
 export class MockStorageProvider extends StorageProvider {
   name = "mock";
   #server = null;
   #port;
-  #sessions = new Map(); // one-time upload links: token -> file info
-  #stored = new Map();   // files received: fileRecordId -> { storageKey, bytes }
-
+  #sessions = new Map(); 
+  #stored = new Map();  
   constructor(port = 4455) {
     super();
     this.#port = port;
   }
 
+// boot up the native server
   async start() {
     this.#server = createServer((req, res) => this.#handleUpload(req, res));
     await new Promise((resolve) => this.#server.listen(this.#port, resolve));
     return this;
   }
 
+  // shut down the native server
   async stop() {
     await new Promise((resolve) => this.#server.close(resolve));
   }
 
+  // implementation of the contract: returns a one-file upload link
   async createUploadTarget({ fileRecordId, folder, size }) {
     const token = randomUUID();
     this.#sessions.set(token, { fileRecordId, folder, size });
     return { url: `http://localhost:${this.#port}/upload/${token}`, method: "PUT", headers: {} };
   }
 
+  // debugging helper: get the bytes that were uploaded for a given file record
   getStored(fileRecordId) {
     return this.#stored.get(fileRecordId) ?? null;
   }
 
+  // CORS headers
   #handleUpload(req, res) {
     // Let a browser page on another port call this server (CORS)
     res.setHeader("Access-Control-Allow-Origin", "*");
@@ -65,7 +67,7 @@ export class MockStorageProvider extends StorageProvider {
     const token = req.url.split("/upload/")[1];
     const session = this.#sessions.get(token);
     if (!session || req.method !== "PUT") return res.writeHead(404).end("Unknown or used upload link");
-    this.#sessions.delete(token); // one file per link
+    this.#sessions.delete(token); // one-time use only
 
     const chunks = [];
     req.on("data", (chunk) => chunks.push(chunk));
@@ -80,7 +82,7 @@ export class MockStorageProvider extends StorageProvider {
   }
 }
 
-// ---------- Google Drive ----------
+// Google Drive storage provider. Node only. Uses a service account to upload to a shared drive.
 
 export class GoogleDriveProvider extends StorageProvider {
   name = "googleDrive";
@@ -92,9 +94,10 @@ export class GoogleDriveProvider extends StorageProvider {
   constructor(credentials, folderIds) {
     super();
     this.#credentials = credentials; // the service account JSON key
-    this.#folderIds = folderIds;     // { "lpo-covers": "<drive folder id>", ... }
+    this.#folderIds = folderIds;     // defined in the Rules config
   }
 
+  // handshakes  request to Google Drive
   async createUploadTarget({ fileRecordId, folder, name, mimeType, size }) {
     const res = await fetch(
       "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&supportsAllDrives=true",
@@ -119,9 +122,11 @@ export class GoogleDriveProvider extends StorageProvider {
   }
 
   // Sign in as the service account; reuse the token until it nearly expires.
+  // acts like a token cache
   async #getAccessToken() {
     if (this.#token && Date.now() < this.#tokenExpiresAt - 60_000) return this.#token;
 
+    // JWT construction
     const now = Math.floor(Date.now() / 1000);
     const encode = (obj) => Buffer.from(JSON.stringify(obj)).toString("base64url");
     const unsigned =
@@ -133,6 +138,8 @@ export class GoogleDriveProvider extends StorageProvider {
         iat: now,
         exp: now + 3600,
       });
+
+      // sign the JWT with the service account's private key and request an access token from Google
     const signature = createSign("RSA-SHA256").update(unsigned).sign(this.#credentials.private_key, "base64url");
 
     const res = await fetch("https://oauth2.googleapis.com/token", {

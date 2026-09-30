@@ -1,11 +1,11 @@
 /*
 Decides whether an upload is allowed, records it, and asks storage where the file should go.
 
-- Rules:          which files are allowed (type, size, folder, level)
-- UploadError:    errors that are safe to show the user
-- Repository:     where file records are saved (in memory for the POC)
-- UploadPolicy:   who may upload
-- UploadService:  startUpload(), which ties it all together
+- Rules: which files are allowed (type, size, folder, level
+- UploadError: errors that are safe to show the user
+- Repository: where file records are saved (in memory for the POC
+- UploadPolicy: who may upload
+- UploadService: startUpload(), which ties it all together
 */
 
 // Rules
@@ -37,6 +37,7 @@ export const FILE_RULES = {
   },
 };
 
+// custom error class for upload errors that are safe to show the user
 export class UploadError extends Error {
   constructor(message, options) {
     super(message, options);
@@ -44,6 +45,7 @@ export class UploadError extends Error {
   }
 }
 
+// validation function for file uploads
 export function checkFile(kind, { size, type }) {
   const rule = FILE_RULES[kind];
   if (!rule) throw new UploadError("Unknown file kind");
@@ -54,8 +56,7 @@ export function checkFile(kind, { size, type }) {
     throw new UploadError(`File too large. Maximum is ${rule.maxSize / MB} MB`);
 }
 
-// ---------- Repository ----------
-
+// repository interface and contract for file records
 export class FileRepository {
   async createFile(data) {
     throw new Error("createFile not implemented");
@@ -68,6 +69,7 @@ export class FileRepository {
   }
 }
 
+// in-memory implementation of the file repository for testing and development
 export class InMemoryFileRepository extends FileRepository {
   #files = new Map();
 
@@ -91,7 +93,7 @@ export class InMemoryFileRepository extends FileRepository {
 }
 
 
-// policy
+// policy: who is allowed to upload what
 export class UploadPolicy {
   check(user, kind) {
     if (!user) throw new UploadError("Please sign in to upload");
@@ -110,13 +112,13 @@ export class UploadService {
   }
 
   async startUpload(user, { kind, relatedId, name, mimeType, size }) {
-    // 1. Is the file itself allowed?
+    // check if the file is allowed
     checkFile(kind, { size, type: mimeType });
 
-    // 2. Is this user allowed?
+    // check if the user is allowed to upload this kind of file
     this.policy.check(user, kind);
 
-    // 3. Record the upload as "uploading" (not trusted yet)
+    // record the file in the repository with status uploading
     const fileRecord = await this.repository.createFile({
       kind,
       relatedId: relatedId ?? null,
@@ -126,11 +128,11 @@ export class UploadService {
       level: FILE_RULES[kind].level,
       status: "uploading",
       provider: this.provider.name,
-      storageKey: null, // filled in step 3
+      storageKey: null, 
       uploadedBy: user.id,
     });
 
-    // 4. Ask storage for a one-file upload link; undo the record if it fails
+    // Ask storage for a one-file upload link and roll back the record if it fails
     try {
       const target = await this.provider.createUploadTarget({
         fileRecordId: fileRecord.id,
