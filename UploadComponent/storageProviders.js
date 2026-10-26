@@ -1,12 +1,3 @@
-/*
-storageProviders.js: where the file bytes go.
-The only file that knows about Google Drive. Node only.
-
-- StorageProvider:      the contract every storage must follow
-- MockStorageProvider:  a tiny local server, for the POC (no accounts needed)
-- GoogleDriveProvider:  the real Google Drive (Shared Drive + service account)
-*/
-
 import { createServer } from "node:http";
 import { createSign, randomUUID } from "node:crypto";
 
@@ -14,7 +5,6 @@ import { createSign, randomUUID } from "node:crypto";
 export class StorageProvider {
   name = "base";
 
-  // Returns { url, method, headers }: a link that accepts exactly one file.
   async createUploadTarget({ fileRecordId, folder, name, mimeType, size }) {
     throw new Error("createUploadTarget not implemented");
   }
@@ -82,7 +72,7 @@ export class MockStorageProvider extends StorageProvider {
   }
 }
 
-// Google Drive storage provider. Node only. Uses a service account to upload to a shared drive.
+// Google Drive storage provider. Uses a service account to upload to a shared drive.
 
 export class GoogleDriveProvider extends StorageProvider {
   name = "googleDrive";
@@ -112,7 +102,7 @@ export class GoogleDriveProvider extends StorageProvider {
         body: JSON.stringify({
           name: `${fileRecordId}-${name}`,
           parents: [this.#folderIds[folder]],
-          appProperties: { fileRecordId }, // tag that step 3 checks
+          appProperties: { fileRecordId },
         }),
       }
     );

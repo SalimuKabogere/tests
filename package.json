@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "convex": "^1.46.0",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "vitest": "^5.0.5"
+  }
+}

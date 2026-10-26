@@ -1,4 +1,4 @@
-import { UploadService, InMemoryFileRepository } from "./UploadService.js";
+import { UploadService, InMemoryFileRepository } from "../UploadService.js";
 
 const provider = { name: "fake", async createUploadTarget({ fileRecordId }) {
   return { url: `https://example.test/${fileRecordId}`, method: "PUT", headers: {} };

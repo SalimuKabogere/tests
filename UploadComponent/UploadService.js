@@ -92,7 +92,6 @@ export class InMemoryFileRepository extends FileRepository {
   }
 }
 
-
 // policy: who is allowed to upload what
 export class UploadPolicy {
   check(user, kind) {
@@ -128,7 +127,7 @@ export class UploadService {
       level: FILE_RULES[kind].level,
       status: "uploading",
       provider: this.provider.name,
-      storageKey: null, 
+      storageKey: null,
       uploadedBy: user.id,
     });
 
@@ -146,7 +145,7 @@ export class UploadService {
       await this.repository.updateFile(fileRecord.id, { status: "deleted" });
       throw new UploadError("Could not start the upload. Please try again.", {
         cause: error,
-      });
+      }); 
     }
   }
 }
