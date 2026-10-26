@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mutations in JS</title>
+</head>
+<body>
+    <h1>Mutations in  JS</h1>
+
+    <script>
+
+        /*
+        Pass-by-reference means that when you pass an object to a function, the function receives a 
+        reference to the original object, rather than a copy of it. 
+        This means that if you modify the object inside the function, the changes will affect the original object outside the function
+        as well.
+        In other words, the function can mutate the original object because it has access to the same memory location where the object is stored.
+        */
+
+        const person = {
+            name: 'Loma',
+            age: 30,
+            occupation: 'Engineer'
+        }
+
+        function updatePerson(object) {
+            object.name = "Salimu Kabogere";
+            console.log(object);
+        }
+
+        updatePerson(person);
+        console.log(person);
+
+        // this same implementation also works for the arrays
+        const arr = [
+            1, 2, 3, 4, 5
+        ]
+
+        function updateArray(array) {
+            array.push(6);
+            console.log(array);
+        }
+
+        updateArray(arr);
+        console.log(arr);
+
+
+
+    </script>
+</body>
+</html>
